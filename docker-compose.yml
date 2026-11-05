@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .
+    ports:
+      - '8000:8000'
+    environment:
+      # Todavia no se usa: queda listo para cuando entre SQLAlchemy.
+      DATABASE_URL: postgresql+psycopg://alquilometro:alquilometro@db:5432/alquilometro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: alquilometro
+      POSTGRES_PASSWORD: alquilometro
+      POSTGRES_DB: alquilometro
+    ports:
+      - '5432:5432'
+    volumes:
+      - datos_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U alquilometro']
+      interval: 5s
+      retries: 10
+
+volumes:
+  datos_pg:

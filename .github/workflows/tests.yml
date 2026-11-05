@@ -1,0 +1,33 @@
+name: tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Traer el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Poetry
+        run: pipx install poetry
+
+      - name: Preparar Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: poetry
+
+      - name: Instalar dependencias
+        run: poetry install
+
+      - name: Revisar estilo (ruff)
+        run: poetry run ruff check .
+
+      - name: Correr los tests
+        run: poetry run pytest
