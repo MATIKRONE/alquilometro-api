@@ -1,0 +1,63 @@
+[project]
+name = "alquilometro-api"
+version = "0.1.0"
+description = "API REST de Alquilómetro para calcular el costo real de alquileres."
+readme = "README.md"
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "fastapi[standard] (>=0.162.0,<0.163.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.2.0,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "ruff (>=0.17.3,<0.18.0)",
+    "typos (>=1.52.0,<2.0.0)",
+    "httpx (>=0.28.1,<0.29.0)"
+]
+
+[tool.ruff]
+line-length = 79
+extend-exclude = ['migrations']
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT']
+
+[tool.ruff.format]
+preview = true
+quote-style = 'single'
+
+[tool.pytest.ini_options]
+pythonpath = ['.']
+addopts = [
+    '-p',
+    'no:warnings',
+    '--cov=alquilometro_api',
+    '--cov-context=test',
+]
+
+[tool.typos.files]
+extend-exclude = ['*.md', 'migrations']
+
+[tool.poe]
+poetry_command = ''
+
+[tool.poe.tasks]
+lint = { cmd = 'ruff check' }
+format = [
+    { cmd = 'ruff check --fix' },
+    { cmd = 'ruff format' },
+]
+serve = 'fastapi dev alquilometro_api/app.py'
+test = [
+    'lint',
+    { cmd = 'pytest -s -x -vv $POE_EXTRA_ARGS' },
+    { cmd = 'coverage html --show-contexts' },
+]
