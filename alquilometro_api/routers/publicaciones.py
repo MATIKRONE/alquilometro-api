@@ -1,3 +1,5 @@
+import itertools
+
 from fastapi import APIRouter, status
 
 from alquilometro_api.schemas.publicacion import (
@@ -13,6 +15,7 @@ router = APIRouter(
 # Por ahora guardamos los avisos en memoria.
 # Más adelante SQLAlchemy reemplazará esta lista.
 publicaciones: list[PublicacionRespuesta] = []
+generador_ids = itertools.count(1)
 
 
 @router.post(
@@ -22,7 +25,7 @@ publicaciones: list[PublicacionRespuesta] = []
 )
 def crear_publicacion(datos: PublicacionCrear) -> PublicacionRespuesta:
     publicacion = PublicacionRespuesta(
-        id=len(publicaciones) + 1,
+        id=next(generador_ids),
         **datos.model_dump(),
     )
     publicaciones.append(publicacion)
