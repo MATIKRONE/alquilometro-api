@@ -9,12 +9,12 @@ class Configuracion(BaseSettings):
     """
 
     # TODO: SQLite para desarrolo y tests; postgresql + psycopg al final
-    DATABASE_URL: str = "sqlite:///./alquilometro.db"
+    DATABASE_URL: str = 'sqlite:///./alquilometro.db'
     sql_echo: bool = False
 
     model_config = SettingsConfigDict(
         env_file='.env',
-        env_file_encodings='utf-8',
+        env_file_encoding='utf-8',
         extra='ignore',
     )
 

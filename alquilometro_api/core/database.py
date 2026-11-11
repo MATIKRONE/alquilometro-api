@@ -57,4 +57,3 @@ def crear_tablas(engine: Engine | None = None) -> None:
     estar registrados en `Base.metadata`.
     """
     Base.metadata.create_all(engine or get_engine())
-    # SQLite ignora

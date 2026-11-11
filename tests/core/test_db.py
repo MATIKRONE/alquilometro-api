@@ -24,7 +24,7 @@ class TablaDePrueba(Base):
 
 @pytest.fixture(autouse=True, scope='module')
 def _aislar_tabla_de_prueba() -> Iterator[None]:
-    # Solo en este módulo: la tabla no debe existir ara otros tests.
+    # Solo en este módulo: la tabla no debe existir para otros tests.
     yield
     Base.metadata.remove(TablaDePrueba.__table__)
 
@@ -37,6 +37,7 @@ def test_in_memory_engine_shares_one_database_across_connections() -> None:
 
     with engine.connect() as otra:
         assert otra.execute(text('SELECT id FROM t')).scalar_one() == 7  # noqa: PLR2004
+    engine.dispose()
 
 
 def test_foreign_keys_are_enforced(engine: Engine) -> None:
@@ -54,6 +55,7 @@ def test_file_database_persists_between_engines(tmp_path: Path) -> None:
     segundo = crear_engine(url)
 
     assert 't' in inspect(segundo).get_table_names()
+    segundo.dispose()
 
 
 def test_crear_tablas_creates_missing_tables_and_is_idempotent() -> None:
@@ -63,6 +65,7 @@ def test_crear_tablas_creates_missing_tables_and_is_idempotent() -> None:
     crear_tablas(engine)
 
     assert 'tabla_de_prueba' in inspect(engine).get_table_names()
+    engine.dispose()
 
 
 def test_sesion_fixture_can_persist_and_read(sesion: Session) -> None:
@@ -95,22 +98,29 @@ def test_app_startup_creates_tables(
     with TestClient(app):
         pass
 
-    assert (
-        'tabla_de_prueba'
-        in inspect(crear_engine(f'sqlite:///{ruta}')).get_table_names()
-    )
+    engine = crear_engine(f'sqlite:///{ruta}')
+
+    assert 'tabla_de_prueba' in inspect(engine).get_table_names()
+
+    engine.dispose()
 
 
 def test_non_sqlite_urls_get_no_sqlite_specific_options(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     llamadas: list[tuple[tuple, dict]] = []
+
     monkeypatch.setattr(
         database,
         'create_engine',
         lambda *args, **kwargs: llamadas.append((args, kwargs)),
     )
 
-    database.crear_engine('postgresql+psycopg://u:p@db/x', echo=True)
+    crear_engine('postgresql://usuario:clave@localhost/alquilometro')
 
-    assert llamadas == [(('postgresql+psycopg://u:p@db/x',), {'echo': True})]
+    assert llamadas == [
+        (
+            ('postgresql://usuario:clave@localhost/alquilometro',),
+            {'echo': False},
+        ),
+    ]
