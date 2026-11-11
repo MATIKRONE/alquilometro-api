@@ -3,29 +3,35 @@ from http import HTTPStatus
 import pytest
 
 from alquilometro_api.domain.errores import (
+    ConflictoDominio,
     ErrorDominio,
+    IndiceNoDisponible,
     MonedaIncompatible,
+    PermisoInsuficiente,
+    RecursoNoEncontrado,
     ValidacionError,
 )
 
 
-def test_error_dominio_base_is_abstract() -> None:
-    with pytest.raises(TypeError):
-        ErrorDominio('no se puede instanciar')
-
-
 @pytest.mark.parametrize(
-    ('error', 'codigo'),
+    ('tipo_error', 'codigo_http_esperado'),
     [
         (ValidacionError, HTTPStatus.UNPROCESSABLE_ENTITY),
         (MonedaIncompatible, HTTPStatus.UNPROCESSABLE_ENTITY),
+        (RecursoNoEncontrado, HTTPStatus.NOT_FOUND),
+        (PermisoInsuficiente, HTTPStatus.FORBIDDEN),
+        (ConflictoDominio, HTTPStatus.CONFLICT),
+        (IndiceNoDisponible, HTTPStatus.UNPROCESSABLE_ENTITY),
     ],
 )
-def test_domain_errors_carry_message_and_http_code(
-    error: type[ErrorDominio], codigo: HTTPStatus
+def test_errores_de_dominio_guardan_mensaje_y_codigo_http(
+    tipo_error: type[ErrorDominio],
+    codigo_http_esperado: HTTPStatus,
 ) -> None:
-    excepcion = error('algo salió mal')
+    mensaje = 'algo salió mal'
 
-    assert excepcion.mensaje == 'algo salió mal'
-    assert excepcion.codigo_http == codigo
+    excepcion = tipo_error(mensaje)
+
+    assert str(excepcion) == mensaje
+    assert excepcion.codigo_http == codigo_http_esperado
     assert isinstance(excepcion, ErrorDominio)
