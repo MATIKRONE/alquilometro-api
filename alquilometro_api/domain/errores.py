@@ -1,33 +1,45 @@
-"""Errores de dominio.
-
-Cada error lleva el código HTTP con el que la API lo traduce (ver el
-diagrama de clases, sección "Excepciones de dominio"). El handler de
-FastAPI que hace esa traducción es la tarea F7.
-"""
+"Errores propios de las reglas de negocio de Alquilómetro."
 
 from http import HTTPStatus
 
 
 class ErrorDominio(Exception):
-    """Base abstracta de los errores de negocio de la API."""
+    """Clase base para los errores del negocio."""
 
-    codigo_http: int = HTTPStatus.INTERNAL_SERVER_ERROR
-
-    def __init__(self, mensaje: str) -> None:
-        if type(self) is ErrorDominio:
-            msg = 'ErrorDominio es abstracta: usá una subclase.'
-            raise TypeError(msg)
-        super().__init__(mensaje)
-        self.mensaje = mensaje
+    codigo_http = HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 class ValidacionError(ErrorDominio):
-    """Datos de entrada inválidos (rangos, criterios, tasas, etc.)."""
+    """Una regla de negocio no se cumple."""
 
     codigo_http = HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 class MonedaIncompatible(ErrorDominio):
-    """Se intentó mezclar ARS y USD sin una cotización explícita."""
+    """No se pueden operar montos de monedas diferentes."""
+
+    codigo_http = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class RecursoNoEncontrado(ErrorDominio):
+    """El recurso solicitado no existe."""
+
+    codigo_http = HTTPStatus.NOT_FOUND
+
+
+class PermisoInsuficiente(ErrorDominio):
+    """El usuario no tiene permiso para realizar la acción."""
+
+    codigo_http = HTTPStatus.FORBIDDEN
+
+
+class ConflictoDominio(ErrorDominio):
+    """La operación entra en conflicto con el estado actual."""
+
+    codigo_http = HTTPStatus.CONFLICT
+
+
+class IndiceNoDisponible(ErrorDominio):
+    """No existen datos del índice para realizar el cálculo."""
 
     codigo_http = HTTPStatus.UNPROCESSABLE_ENTITY
