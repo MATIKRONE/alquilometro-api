@@ -1,10 +1,11 @@
+from decimal import Decimal
+
 from sqlalchemy import Engine, inspect
 from sqlalchemy.orm import Session
 
 from alquilometro_api.models.propiedad import Propiedad
 from alquilometro_api.models.publicacion import Publicacion
 from alquilometro_api.models.usuario import Usuario
-from decimal import Decimal
 
 
 def test_crear_tablas_incluye_los_modelos_base(engine: Engine) -> None:
