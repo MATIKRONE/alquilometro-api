@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+import alquilometro_api.models  # noqa: F401
 from alquilometro_api.core.database import crear_tablas
 from alquilometro_api.domain.errores import ErrorDominio
 from alquilometro_api.routers.publicaciones import (
