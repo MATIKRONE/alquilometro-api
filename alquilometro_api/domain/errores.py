@@ -43,3 +43,9 @@ class IndiceNoDisponible(ErrorDominio):
     """No existen datos del índice para realizar el cálculo."""
 
     codigo_http = HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+class NoAutenticado(ErrorDominio):
+    """Credenciales o token inválidos, o token vencido."""
+
+    codigo_http = HTTPStatus.UNAUTHORIZED
