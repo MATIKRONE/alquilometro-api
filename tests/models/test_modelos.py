@@ -22,6 +22,7 @@ def test_publicacion_se_relaciona_con_usuario_y_propiedad(
     usuario = Usuario(
         nombre='Ana Pérez',
         email='ana@example.com',
+        password_hash='hash-de-pueba',
     )
     propiedad = Propiedad(
         direccion='Avenida Rivadavia 5500',
