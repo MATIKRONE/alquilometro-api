@@ -7,6 +7,7 @@ from alquilometro_api.domain.errores import (
     ErrorDominio,
     IndiceNoDisponible,
     MonedaIncompatible,
+    NoAutenticado,
     PermisoInsuficiente,
     RecursoNoEncontrado,
     ValidacionError,
@@ -35,3 +36,7 @@ def test_errores_de_dominio_guardan_mensaje_y_codigo_http(
     assert str(excepcion) == mensaje
     assert excepcion.codigo_http == codigo_http_esperado
     assert isinstance(excepcion, ErrorDominio)
+
+
+def test_no_autenticado_is_a_401() -> None:
+    assert NoAutenticado.codigo_http == 401  # noqa: PLR2004
