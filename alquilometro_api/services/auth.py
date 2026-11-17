@@ -10,6 +10,7 @@ from alquilometro_api.core.seguridad import (
     verificar_password,
 )
 from alquilometro_api.core.tokens import crear_token, validar_token
+from alquilometro_api.domain.dinero import Dinero
 from alquilometro_api.domain.errores import (
     ConflictoDominio,
     NoAutenticado,
@@ -101,6 +102,17 @@ class ServicioAuth:
         if usuario is None:
             msg = 'El usuario del token ya no existe.'
             raise NoAutenticado(msg)
+        return usuario
+
+    def actualizar_ingreso_referencia(
+        self,
+        usuario: Usuario,
+        ingreso: Dinero,
+    ) -> Usuario:
+        """Actualiza el ingreso usado para los análisis económicos."""
+        usuario.ingreso_referencia = ingreso
+        self.sesion.commit()
+        self.sesion.refresh(usuario)
         return usuario
 
     def _buscar_por_email(self, email: str) -> Usuario | None:

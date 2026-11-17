@@ -1,14 +1,18 @@
+from decimal import Decimal
+
 import pytest
 from sqlalchemy.orm import Session
 
 from alquilometro_api.core.seguridad import verificar_password
 from alquilometro_api.core.tokens import crear_token, validar_token
+from alquilometro_api.domain.dinero import Dinero
 from alquilometro_api.domain.errores import (
     ConflictoDominio,
     NoAutenticado,
     PermisoInsuficiente,
     ValidacionError,
 )
+from alquilometro_api.domain.moneda import Moneda
 from alquilometro_api.domain.rol import Rol
 from alquilometro_api.models.usuario import Usuario
 from alquilometro_api.services.auth import ServicioAuth
@@ -160,3 +164,19 @@ def test_registrar_turns_a_database_duplicate_race_into_a_conflict(
 
     with pytest.raises(ConflictoDominio):
         servicio.registrar('Ana bis', 'ana@example.com', PASSWORD)
+
+
+def test_actualizar_ingreso_referencia_lo_guarda_en_el_usuario(
+    servicio: ServicioAuth,
+    sesion: Session,
+) -> None:
+    usuario = registrar_ana(servicio)
+    ingreso = Dinero(Decimal('1500000'), Moneda.ARS)
+
+    servicio.actualizar_ingreso_referencia(usuario, ingreso)
+
+    sesion.expire_all()
+    guardado = sesion.get(Usuario, usuario.id)
+
+    assert guardado is not None
+    assert guardado.ingreso_referencia == ingreso

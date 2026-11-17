@@ -1,14 +1,11 @@
 from decimal import Decimal
+from http import HTTPStatus
 
-from fastapi import status
 from fastapi.testclient import TestClient
 
-from alquilometro_api.app import app
 from alquilometro_api.domain.dinero import Dinero
 from alquilometro_api.domain.moneda import Moneda
 from alquilometro_api.schemas.publicacion import DineroEntrada
-
-client = TestClient(app)
 
 
 def datos_publicacion() -> dict[str, object]:
@@ -30,137 +27,278 @@ def datos_publicacion() -> dict[str, object]:
     }
 
 
-def test_crear_publicacion() -> None:
-    response = client.post('/publicaciones', json=datos_publicacion())
+def crear_publicacion(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+    datos: dict[str, object],
+):
+    return cliente.post(
+        '/publicaciones',
+        json=datos,
+        headers=headers_inmobiliaria,
+    )
 
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()['id'] == 1
-    assert response.json()['propiedad']['zona'] == 'Caballito'
-    assert response.json()['precio_alquiler'] == {
-        'monto': '650000',
+
+def test_crear_publicacion(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    respuesta = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    assert respuesta.status_code == HTTPStatus.CREATED
+    assert respuesta.json()['id'] == 1
+    assert respuesta.json()['propiedad']['zona'] == 'Caballito'
+    assert respuesta.json()['precio_alquiler'] == {
+        'monto': '650000.00',
         'moneda': 'ARS',
     }
 
 
-def test_listar_publicaciones() -> None:
-    client.post('/publicaciones', json=datos_publicacion())
+def test_listar_publicaciones(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
 
-    response = client.get('/publicaciones')
+    respuesta = cliente.get('/publicaciones')
 
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()) == 1
-    assert response.json()[0]['id'] == 1
+    assert respuesta.status_code == HTTPStatus.OK
+    assert len(respuesta.json()) == 1
+    assert respuesta.json()[0]['id'] == 1
 
 
-def test_crear_publicacion_rechaza_un_precio_negativo() -> None:
+def test_crear_publicacion_rechaza_un_precio_negativo(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
     datos['precio_alquiler'] = {'monto': '-1', 'moneda': 'ARS'}
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_crear_publicacion_expensas_cero_da_201() -> None:
+def test_crear_publicacion_expensas_cero_da_201(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
     datos['expensas_mensuales'] = {'monto': '0', 'moneda': 'ARS'}
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()['expensas_mensuales']['monto'] == '0'
+    assert respuesta.status_code == HTTPStatus.CREATED
+    assert respuesta.json()['expensas_mensuales']['monto'] == '0.00'
 
 
-def test_crear_publicacion_alquiler_cero_da_422() -> None:
+def test_crear_publicacion_alquiler_cero_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
     datos['precio_alquiler'] = {'monto': '0', 'moneda': 'ARS'}
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    # Verifica que actúe nuestro @field_validator
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_crear_publicacion_moneda_eur_da_422() -> None:
+def test_crear_publicacion_moneda_eur_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
-    datos['precio_alquiler']['moneda'] = 'EUR'
+    datos['precio_alquiler'] = {'monto': '650000', 'moneda': 'EUR'}
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    # Falla porque EUR no está en el Enum de Moneda
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_crear_publicacion_tres_decimales_da_422() -> None:
+def test_crear_publicacion_tres_decimales_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
-    datos['precio_alquiler']['monto'] = '650000.125'
+    datos['precio_alquiler'] = {'monto': '650000.125', 'moneda': 'ARS'}
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    # Falla por el decimal_places=2 de Pydantic
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-
-
-def test_listar_publicaciones_vacio_devuelve_lista_vacia() -> None:
-    response = client.get('/publicaciones')
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_crear_publicacion_sin_propiedad_da_422() -> None:
+def test_listar_publicaciones_vacio_devuelve_lista_vacia(
+    cliente: TestClient,
+) -> None:
+    respuesta = cliente.get('/publicaciones')
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert respuesta.json() == []
+
+
+def test_crear_publicacion_sin_propiedad_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
     del datos['propiedad']
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_crear_publicacion_en_usd_da_201() -> None:
+def test_crear_publicacion_en_usd_da_201(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
-    datos['precio_alquiler']['moneda'] = 'USD'
+    datos['precio_alquiler'] = {'monto': '650000', 'moneda': 'USD'}
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()['precio_alquiler']['moneda'] == 'USD'
+    assert respuesta.status_code == HTTPStatus.CREATED
+    assert respuesta.json()['precio_alquiler']['moneda'] == 'USD'
 
 
-def test_crear_publicacion_fijo_sin_tasa_da_422() -> None:
+def test_crear_publicacion_fijo_sin_tasa_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
     datos['tipo_ajuste'] = 'FIJO'
-    # No enviamos tasa_ajuste
-    response = client.post('/publicaciones', json=datos)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
+
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_crear_publicacion_indice_sin_serie_codigo_da_422() -> None:
+def test_crear_publicacion_indice_sin_serie_codigo_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
     datos['tipo_ajuste'] = 'INDICE'
     datos['tasa_ajuste'] = '10.5'
-    # No enviamos el campo serie_codigo
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    # Verifica que actúe nuestro @model_validator de coherencia
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
 
 
-def test_crear_publicacion_indice_con_serie_codigo_da_201() -> None:
+def test_crear_publicacion_indice_con_serie_codigo_da_201(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
     datos = datos_publicacion()
     datos['tipo_ajuste'] = 'INDICE'
     datos['serie_codigo'] = 'ICL'
-    # No enviamos el campo tasa ajuste
 
-    response = client.post('/publicaciones', json=datos)
+    respuesta = crear_publicacion(cliente, headers_inmobiliaria, datos)
 
-    # Verifica que actúe nuestro @model_validator de coherencia
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()['tipo_ajuste'] == 'INDICE'
-    assert response.json()['serie_codigo'] == 'ICL'
+    assert respuesta.status_code == HTTPStatus.CREATED
+    assert respuesta.json()['tipo_ajuste'] == 'INDICE'
+    assert respuesta.json()['serie_codigo'] == 'ICL'
+
+
+def test_consultar_costo_real_de_una_publicacion(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    respuesta = cliente.get('/publicaciones/1/costo-real')
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert respuesta.json()['total'] == {
+        'monto': '754500.00',
+        'moneda': 'ARS',
+    }
+    assert respuesta.json()['faltantes'] == []
+    assert respuesta.json()['componentes_informados'][
+        'seguro_caucion_prorrateado'
+    ] == {
+        'monto': '7500.00',
+        'moneda': 'ARS',
+    }
+
+
+def test_consultar_costo_real_de_publicacion_inexistente_da_404(
+    cliente: TestClient,
+) -> None:
+    respuesta = cliente.get('/publicaciones/999/costo-real')
+
+    assert respuesta.status_code == HTTPStatus.NOT_FOUND
+    assert respuesta.json()['detail'] == 'No encontramos esa publicación.'
+
+
+def test_consultar_analisis_calcula_porcentaje_sobre_el_ingreso(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    cliente.put(
+        '/usuarios/me/ingreso-referencia',
+        json={
+            'monto': '1500000',
+            'moneda': 'ARS',
+        },
+        headers=headers_inmobiliaria,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones/1/analisis',
+        headers=headers_inmobiliaria,
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert respuesta.json()['porcentaje_ingreso'] == '50.30'
+    assert respuesta.json()['costo_real']['total'] == {
+        'monto': '754500.00',
+        'moneda': 'ARS',
+    }
+
+
+def test_consultar_analisis_sin_ingreso_referencia_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones/1/analisis',
+        headers=headers_inmobiliaria,
+    )
+
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
+    assert respuesta.json()['detail'] == (
+        'Primero cargá tu ingreso de referencia.'
+    )
 
 
 def test_a_dominio_a_dinero() -> None:
-    d = DineroEntrada(monto=Decimal('10.50'), moneda=Moneda.USD)
-    assert d.a_dominio() == Dinero(Decimal('10.50'), Moneda.USD)
+    dinero = DineroEntrada(monto=Decimal('10.50'), moneda=Moneda.USD)
+
+    assert dinero.a_dominio() == Dinero(Decimal('10.50'), Moneda.USD)
