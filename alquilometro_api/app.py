@@ -10,6 +10,9 @@ from alquilometro_api.domain.errores import ErrorDominio
 from alquilometro_api.routers.auth import router as auth_router
 from alquilometro_api.routers.contratos import router as contratos_router
 from alquilometro_api.routers.indices import router as indices_router
+from alquilometro_api.routers.proyecciones import (
+    router as proyecciones_router,
+)
 from alquilometro_api.routers.publicaciones import (
     router as publicaciones_router,
 )
@@ -45,6 +48,7 @@ app.include_router(auth_router)
 app.include_router(publicaciones_router)
 app.include_router(contratos_router)
 app.include_router(indices_router)
+app.include_router(proyecciones_router)
 
 
 @app.get('/')
