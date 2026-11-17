@@ -27,6 +27,7 @@ inquilino: da un número más alto que el pactado.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from calendar import monthrange
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -78,11 +79,11 @@ class IndicesEnMemoria:
         self._valores: dict[tuple[str, date], Decimal] = {}
 
     def cargar(self, serie: str, momento: date, valor: Numero) -> None:
-        clave = (_normalizar_serie(serie), _primer_dia(momento))
+        clave = (normalizar_serie(serie), primer_dia_del_mes(momento))
         self._valores[clave] = _a_decimal(valor)
 
     def valor(self, serie: str, momento: date) -> Decimal | None:
-        clave = (_normalizar_serie(serie), _primer_dia(momento))
+        clave = (normalizar_serie(serie), primer_dia_del_mes(momento))
         return self._valores.get(clave)
 
 
@@ -115,7 +116,7 @@ class MecanismoAjuste(ABC):
             msg = 'La fecha de ajuste es anterior al inicio del contrato.'
             raise ValidacionError(msg)
 
-        transcurridos = _meses_entre(fecha_base, fecha_ajuste)
+        transcurridos = meses_entre(fecha_base, fecha_ajuste)
         periodos = transcurridos // meses_periodicidad
         if periodos < 1:
             msg = (
@@ -181,7 +182,7 @@ class AjusteIndice(MecanismoAjuste):
         if not serie or not serie.strip():
             msg = 'El ajuste por índice necesita el código de la serie.'
             raise ValidacionError(msg)
-        self.serie = _normalizar_serie(serie)
+        self.serie = normalizar_serie(serie)
         self.repositorio = repositorio
 
     def _coeficiente(
@@ -258,21 +259,29 @@ class FabricaMecanismoAjuste:
         return AjusteIndice(serie, repositorio)
 
 
-def _normalizar_serie(serie: str) -> str:
+def normalizar_serie(serie: str) -> str:
     return serie.strip().upper()
 
 
-def _primer_dia(momento: date) -> date:
+def primer_dia_del_mes(momento: date) -> date:
     """Los índices son mensuales: toda fecha cae al 1 de su mes."""
     return date(momento.year, momento.month, 1)
 
 
-def _meses_entre(desde: date, hasta: date) -> int:
+def meses_entre(desde: date, hasta: date) -> int:
     """Meses completos transcurridos entre dos fechas."""
     meses = (hasta.year - desde.year) * 12 + (hasta.month - desde.month)
     if hasta.day < desde.day:
         meses -= 1
     return meses
+
+
+def sumar_meses(fecha: date, meses: int) -> date:
+    """Suma meses calendario; si el día no existe, cae al último del mes."""
+    indice_mes = fecha.month - 1 + meses
+    anio = fecha.year + indice_mes // 12
+    mes = indice_mes % 12 + 1
+    return date(anio, mes, min(fecha.day, monthrange(anio, mes)[1]))
 
 
 def _a_decimal(valor: Numero) -> Decimal:
