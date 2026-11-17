@@ -76,3 +76,24 @@ def test_usuario_me_sin_token_devuelve_401(
 
     assert respuesta.status_code == HTTPStatus.UNAUTHORIZED
     assert respuesta.json()['detail'] == 'Se requiere un token de acceso.'
+
+
+def test_usuario_actualiza_su_ingreso_referencia(
+    cliente: TestClient,
+) -> None:
+    token = registrar_y_obtener_token(cliente)
+
+    respuesta = cliente.put(
+        '/usuarios/me/ingreso-referencia',
+        json={
+            'monto': '1500000',
+            'moneda': 'ARS',
+        },
+        headers={'Authorization': f'Bearer {token}'},
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert respuesta.json()['ingreso_referencia'] == {
+        'monto': '1500000.00',
+        'moneda': 'ARS',
+    }

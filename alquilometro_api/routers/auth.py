@@ -5,6 +5,7 @@ from alquilometro_api.core.database import get_session
 from alquilometro_api.core.dependencias import usuario_actual
 from alquilometro_api.models.usuario import Usuario
 from alquilometro_api.schemas.auth import (
+    IngresoReferenciaEntrada,
     LoginEntrada,
     RegistroEntrada,
     TokenRespuesta,
@@ -50,3 +51,19 @@ def ver_mi_usuario(
     usuario: Usuario = Depends(usuario_actual),
 ) -> Usuario:
     return usuario
+
+
+@router.put(
+    '/usuarios/me/ingreso-referencia',
+    response_model=UsuarioRespuesta,
+)
+def actualizar_ingreso_referencia(
+    datos: IngresoReferenciaEntrada,
+    sesion: Session = Depends(get_session),
+    usuario: Usuario = Depends(usuario_actual),
+) -> Usuario:
+    servicio_auth = ServicioAuth(sesion)
+    return servicio_auth.actualizar_ingreso_referencia(
+        usuario,
+        datos.a_dominio(),
+    )

@@ -1,15 +1,34 @@
-import itertools
+from http import HTTPStatus
 
 import pytest
+from fastapi.testclient import TestClient
 
-import alquilometro_api.routers.publicaciones as router_pub
 
+@pytest.fixture
+def headers_inmobiliaria(
+    cliente: TestClient,
+) -> dict[str, str]:
+    """Registra una inmobiliaria y devuelve su token para los tests."""
 
-@pytest.fixture(autouse=True)
-def limpiar_publicaciones() -> None:
-    """
-    Se ejecuta automáticamente antes de cada test dentro de la carpeta /routers
-    Asegura que la "base de datos" en memoria y los IDs arranquen limpios.
-    """
-    router_pub.publicaciones.clear()
-    router_pub.generador_ids = itertools.count(1)
+    registro = cliente.post(
+        '/auth/registro',
+        json={
+            'nombre': 'Inmobiliaria de prueba',
+            'email': 'inmobiliaria@example.com',
+            'password': 'clave-segura-123',
+            'rol': 'INMOBILIARIA',
+        },
+    )
+    assert registro.status_code == HTTPStatus.CREATED
+
+    login = cliente.post(
+        '/auth/login',
+        json={
+            'email': 'inmobiliaria@example.com',
+            'password': 'clave-segura-123',
+        },
+    )
+    assert login.status_code == HTTPStatus.OK
+
+    token = login.json()['access_token']
+    return {'Authorization': f'Bearer {token}'}

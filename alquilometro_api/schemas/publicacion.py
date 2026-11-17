@@ -14,6 +14,8 @@ from alquilometro_api.domain.moneda import Moneda
 
 
 class DineroEntrada(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     monto: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
     moneda: Moneda = Moneda.ARS
 
@@ -22,6 +24,7 @@ class DineroEntrada(BaseModel):
 
 
 class PropiedadCrear(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     direccion: str = Field(min_length=5, max_length=200)
     zona: str = Field(min_length=2, max_length=100)
     tipo: Literal['departamento', 'casa', 'ph']
@@ -36,7 +39,10 @@ class PropiedadCrear(BaseModel):
 
 
 class PublicacionCrear(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(
+        extra='forbid',
+        from_attributes=True,
+    )
 
     propiedad: PropiedadCrear
     precio_alquiler: DineroEntrada
@@ -85,3 +91,23 @@ class PublicacionCrear(BaseModel):
 
 class PublicacionRespuesta(PublicacionCrear):
     id: int
+
+
+class DesgloseCostoRespuesta(BaseModel):
+    """Costo mensual conocido, componentes y datos no informados."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    total: DineroEntrada
+    componentes_informados: dict[str, DineroEntrada]
+    faltantes: list[str]
+
+
+class AnalisisEconomicoRespuesta(BaseModel):
+    """Costo real y porcentaje que representa sobre el ingreso del usuario."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    costo_real: DesgloseCostoRespuesta
+    ingreso_referencia: DineroEntrada
+    porcentaje_ingreso: Decimal
