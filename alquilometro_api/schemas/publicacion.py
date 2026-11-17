@@ -89,6 +89,26 @@ class PublicacionCrear(BaseModel):
         return self
 
 
+class FiltrosPublicacionesConsulta(BaseModel):
+    """Filtros opcionales para GET /publicaciones."""
+
+    zona: str | None = Field(default=None, min_length=2, max_length=100)
+    ambientes: int | None = Field(default=None, ge=1, le=10)
+    permite_mascotas: bool | None = None
+    tipo_garantia: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=100,
+    )
+    alquiler_min: Decimal | None = Field(default=None, ge=0)
+    alquiler_max: Decimal | None = Field(default=None, ge=0)
+    costo_real_min: Decimal | None = Field(default=None, ge=0)
+    costo_real_max: Decimal | None = Field(default=None, ge=0)
+    moneda: Moneda | None = None
+    orden: Literal['alquiler', 'costo_real', 'precio_m2'] | None = None
+    descendente: bool = False
+
+
 class PublicacionRespuesta(PublicacionCrear):
     id: int
 

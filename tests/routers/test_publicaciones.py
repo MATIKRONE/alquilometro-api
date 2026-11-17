@@ -75,6 +75,325 @@ def test_listar_publicaciones(
     assert respuesta.json()[0]['id'] == 1
 
 
+def test_listar_publicaciones_filtradas_por_zona(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    caballito = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_palermo = datos_publicacion()
+    datos_palermo['propiedad'] = {
+        **datos_palermo['propiedad'],
+        'zona': 'Palermo',
+    }
+    crear_publicacion(cliente, headers_inmobiliaria, datos_palermo)
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={'zona': 'Caballito'},
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        caballito.json()['id'],
+    ]
+
+
+def test_listar_publicaciones_filtradas_por_ambientes(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    dos_ambientes = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_tres_ambientes = datos_publicacion()
+    datos_tres_ambientes['propiedad'] = {
+        **datos_tres_ambientes['propiedad'],
+        'ambientes': 3,
+    }
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_tres_ambientes,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={'ambientes': 2},
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        dos_ambientes.json()['id'],
+    ]
+
+
+def test_listar_publicaciones_rechaza_cero_ambientes(
+    cliente: TestClient,
+) -> None:
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={'ambientes': 0},
+    )
+
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
+
+
+def test_listar_publicaciones_combina_filtros(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    buscada = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_no_coincidente = datos_publicacion()
+    datos_no_coincidente['propiedad'] = {
+        **datos_no_coincidente['propiedad'],
+        'permite_mascotas': False,
+    }
+    datos_no_coincidente['tipo_garantia_aceptada'] = 'garantía propietaria'
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_no_coincidente,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={
+            'zona': 'Caballito',
+            'ambientes': 2,
+            'permite_mascotas': True,
+            'tipo_garantia': 'seguro de caución',
+        },
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        buscada.json()['id'],
+    ]
+
+
+def test_listar_publicaciones_filtradas_por_rango_de_alquiler(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    dentro_del_rango = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_fuera_del_rango = datos_publicacion()
+    datos_fuera_del_rango['precio_alquiler'] = {
+        'monto': '800000',
+        'moneda': 'ARS',
+    }
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_fuera_del_rango,
+    )
+
+    datos_en_dolares = datos_publicacion()
+    datos_en_dolares['precio_alquiler'] = {
+        'monto': '650',
+        'moneda': 'USD',
+    }
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_en_dolares,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={
+            'alquiler_min': '600000',
+            'alquiler_max': '700000',
+            'moneda': 'ARS',
+        },
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        dentro_del_rango.json()['id'],
+    ]
+
+
+def test_listar_publicaciones_filtradas_por_costo_real(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    dentro_del_rango = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_con_expensas_altas = datos_publicacion()
+    datos_con_expensas_altas['expensas_mensuales'] = {
+        'monto': '200000',
+        'moneda': 'ARS',
+    }
+    crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_con_expensas_altas,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={
+            'costo_real_min': '700000',
+            'costo_real_max': '800000',
+            'moneda': 'ARS',
+        },
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        dentro_del_rango.json()['id'],
+    ]
+
+
+def test_listar_publicaciones_ordenadas_por_alquiler_descendente(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    alquiler_menor = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_alquiler_mayor = datos_publicacion()
+    datos_alquiler_mayor['precio_alquiler'] = {
+        'monto': '800000',
+        'moneda': 'ARS',
+    }
+    alquiler_mayor = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_alquiler_mayor,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={
+            'moneda': 'ARS',
+            'orden': 'alquiler',
+            'descendente': 'true',
+        },
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        alquiler_mayor.json()['id'],
+        alquiler_menor.json()['id'],
+    ]
+
+
+def test_listar_publicaciones_ordenadas_por_costo_real_descendente(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    costo_menor = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_con_expensas_altas = datos_publicacion()
+    datos_con_expensas_altas['expensas_mensuales'] = {
+        'monto': '200000',
+        'moneda': 'ARS',
+    }
+    costo_mayor = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_con_expensas_altas,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={
+            'moneda': 'ARS',
+            'orden': 'costo_real',
+            'descendente': 'true',
+        },
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        costo_mayor.json()['id'],
+        costo_menor.json()['id'],
+    ]
+
+
+def test_listar_publicaciones_ordenadas_por_precio_m2_descendente(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    precio_m2_mayor = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_publicacion(),
+    )
+
+    datos_precio_m2_menor = datos_publicacion()
+    datos_precio_m2_menor['propiedad'] = {
+        **datos_precio_m2_menor['propiedad'],
+        'metros_cuadrados': '80',
+    }
+    datos_precio_m2_menor['precio_alquiler'] = {
+        'monto': '800000',
+        'moneda': 'ARS',
+    }
+    precio_m2_menor = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_precio_m2_menor,
+    )
+
+    datos_sin_metros = datos_publicacion()
+    datos_sin_metros['propiedad'] = {
+        **datos_sin_metros['propiedad'],
+        'metros_cuadrados': None,
+    }
+    sin_metros = crear_publicacion(
+        cliente,
+        headers_inmobiliaria,
+        datos_sin_metros,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones',
+        params={
+            'moneda': 'ARS',
+            'orden': 'precio_m2',
+            'descendente': 'true',
+        },
+    )
+
+    assert respuesta.status_code == HTTPStatus.OK
+    assert [publicacion['id'] for publicacion in respuesta.json()] == [
+        precio_m2_mayor.json()['id'],
+        precio_m2_menor.json()['id'],
+        sin_metros.json()['id'],
+    ]
+
+
 def test_crear_publicacion_rechaza_un_precio_negativo(
     cliente: TestClient,
     headers_inmobiliaria: dict[str, str],

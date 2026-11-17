@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -9,6 +10,7 @@ from alquilometro_api.domain.errores import (
     RecursoNoEncontrado,
     ValidacionError,
 )
+from alquilometro_api.domain.moneda import Moneda
 from alquilometro_api.domain.rol import Rol
 from alquilometro_api.models.propiedad import Propiedad
 from alquilometro_api.models.publicacion import Publicacion
@@ -17,6 +19,23 @@ from alquilometro_api.schemas.publicacion import (
     DineroEntrada,
     PublicacionCrear,
 )
+
+
+@dataclass
+class FiltrosPublicaciones:
+    """Criterios opcionales para buscar publicaciones."""
+
+    zona: str | None = None
+    ambientes: int | None = None
+    permite_mascotas: bool | None = None
+    tipo_garantia: str | None = None
+    alquiler_min: Decimal | None = None
+    alquiler_max: Decimal | None = None
+    costo_real_min: Decimal | None = None
+    costo_real_max: Decimal | None = None
+    moneda: Moneda | None = None
+    orden: str | None = None
+    descendente: bool = False
 
 
 class ServicioPublicaciones:
@@ -73,9 +92,139 @@ class ServicioPublicaciones:
         self.sesion.refresh(publicacion)
         return publicacion
 
-    def listar(self) -> list[Publicacion]:
-        consulta = select(Publicacion).order_by(Publicacion.id)
+    def listar(
+        self,
+        filtros: FiltrosPublicaciones | None = None,
+    ) -> list[Publicacion]:
+        if filtros is None:
+            filtros = FiltrosPublicaciones()
+
+        self._validar_filtros(filtros)
+        publicaciones = self._consultar_publicaciones(filtros)
+
+        if (
+            filtros.costo_real_min is not None
+            or filtros.costo_real_max is not None
+        ):
+            publicaciones = [
+                publicacion
+                for publicacion in publicaciones
+                if _esta_dentro_del_rango_de_costo_real(
+                    publicacion,
+                    filtros,
+                )
+            ]
+
+        return self._ordenar_publicaciones(publicaciones, filtros)
+
+    @staticmethod
+    def _validar_filtros(
+        filtros: FiltrosPublicaciones,
+    ) -> None:
+        if (
+            filtros.alquiler_min is not None
+            and filtros.alquiler_max is not None
+            and filtros.alquiler_min > filtros.alquiler_max
+        ):
+            msg = 'El alquiler mínimo no puede ser mayor al máximo.'
+            raise ValidacionError(msg)
+
+        if (
+            filtros.costo_real_min is not None
+            and filtros.costo_real_max is not None
+            and filtros.costo_real_min > filtros.costo_real_max
+        ):
+            msg = 'El costo real mínimo no puede ser mayor al máximo.'
+            raise ValidacionError(msg)
+
+        hay_rango_monetario = (
+            filtros.alquiler_min is not None
+            or filtros.alquiler_max is not None
+            or filtros.costo_real_min is not None
+            or filtros.costo_real_max is not None
+        )
+
+        if hay_rango_monetario and filtros.moneda is None:
+            msg = 'Indicá una moneda para filtrar por rangos monetarios.'
+            raise ValidacionError(msg)
+
+        if filtros.orden is not None and filtros.moneda is None:
+            msg = 'Indicá una moneda para ordenar por un valor monetario.'
+            raise ValidacionError(msg)
+
+    def _consultar_publicaciones(
+        self,
+        filtros: FiltrosPublicaciones,
+    ) -> list[Publicacion]:
+        consulta = select(Publicacion).join(Publicacion.propiedad)
+
+        if filtros.zona is not None:
+            consulta = consulta.where(Propiedad.zona == filtros.zona)
+
+        if filtros.ambientes is not None:
+            consulta = consulta.where(
+                Propiedad.ambientes == filtros.ambientes,
+            )
+
+        if filtros.permite_mascotas is not None:
+            consulta = consulta.where(
+                Propiedad.permite_mascotas.is_(filtros.permite_mascotas),
+            )
+
+        if filtros.tipo_garantia is not None:
+            consulta = consulta.where(
+                Publicacion.tipo_garantia_aceptada == filtros.tipo_garantia,
+            )
+
+        if filtros.moneda is not None:
+            consulta = consulta.where(
+                Publicacion.precio_alquiler_moneda == filtros.moneda.value,
+            )
+
+        if filtros.alquiler_min is not None:
+            consulta = consulta.where(
+                Publicacion.precio_alquiler_monto >= filtros.alquiler_min,
+            )
+
+        if filtros.alquiler_max is not None:
+            consulta = consulta.where(
+                Publicacion.precio_alquiler_monto <= filtros.alquiler_max,
+            )
+
+        if filtros.orden == 'alquiler':
+            orden_alquiler = Publicacion.precio_alquiler_monto
+
+            if filtros.descendente:
+                orden_alquiler = orden_alquiler.desc()
+
+            consulta = consulta.order_by(
+                orden_alquiler,
+                Publicacion.id,
+            )
+        else:
+            consulta = consulta.order_by(Publicacion.id)
+
         return list(self.sesion.scalars(consulta))
+
+    @staticmethod
+    def _ordenar_publicaciones(
+        publicaciones: list[Publicacion],
+        filtros: FiltrosPublicaciones,
+    ) -> list[Publicacion]:
+        if filtros.orden == 'costo_real':
+            return sorted(
+                publicaciones,
+                key=_monto_costo_real,
+                reverse=filtros.descendente,
+            )
+
+        if filtros.orden == 'precio_m2':
+            return _ordenar_por_precio_m2(
+                publicaciones,
+                filtros.descendente,
+            )
+
+        return publicaciones
 
     def obtener(self, publicacion_id: int) -> Publicacion:
         publicacion = self.sesion.get(Publicacion, publicacion_id)
@@ -108,3 +257,67 @@ def _columnas_dinero(
         return None, None
 
     return dinero.monto, dinero.moneda.value
+
+
+def _esta_dentro_del_rango_de_costo_real(
+    publicacion: Publicacion,
+    filtros: FiltrosPublicaciones,
+) -> bool:
+    costo_real = publicacion.calcular_costo_real().total
+
+    if costo_real.moneda is not filtros.moneda:
+        return False
+
+    if (
+        filtros.costo_real_min is not None
+        and costo_real.monto < filtros.costo_real_min
+    ):
+        return False
+
+    if (
+        filtros.costo_real_max is not None
+        and costo_real.monto > filtros.costo_real_max
+    ):
+        return False
+
+    return True
+
+
+def _monto_costo_real(
+    publicacion: Publicacion,
+) -> Decimal:
+    return publicacion.calcular_costo_real().total.monto
+
+
+def _ordenar_por_precio_m2(
+    publicaciones: list[Publicacion],
+    descendente: bool,
+) -> list[Publicacion]:
+    con_metros = [
+        publicacion
+        for publicacion in publicaciones
+        if publicacion.propiedad.metros_cuadrados is not None
+    ]
+    sin_metros = [
+        publicacion
+        for publicacion in publicaciones
+        if publicacion.propiedad.metros_cuadrados is None
+    ]
+
+    con_metros.sort(
+        key=lambda publicacion: _precio_por_m2(publicacion) or Decimal(0),
+        reverse=descendente,
+    )
+
+    return con_metros + sin_metros
+
+
+def _precio_por_m2(
+    publicacion: Publicacion,
+) -> Decimal | None:
+    metros_cuadrados = publicacion.propiedad.metros_cuadrados
+
+    if metros_cuadrados is None:
+        return None
+
+    return publicacion.precio_alquiler.monto / metros_cuadrados

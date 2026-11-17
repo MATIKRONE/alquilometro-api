@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from alquilometro_api.core.database import get_session
@@ -10,10 +12,14 @@ from alquilometro_api.models.usuario import Usuario
 from alquilometro_api.schemas.publicacion import (
     AnalisisEconomicoRespuesta,
     DesgloseCostoRespuesta,
+    FiltrosPublicacionesConsulta,
     PublicacionCrear,
     PublicacionRespuesta,
 )
-from alquilometro_api.services.publicaciones import ServicioPublicaciones
+from alquilometro_api.services.publicaciones import (
+    FiltrosPublicaciones,
+    ServicioPublicaciones,
+)
 
 router = APIRouter(
     prefix='/publicaciones',
@@ -37,10 +43,12 @@ def crear_publicacion(
 
 @router.get('', response_model=list[PublicacionRespuesta])
 def listar_publicaciones(
+    consulta: Annotated[FiltrosPublicacionesConsulta, Query()],
     sesion: Session = Depends(get_session),
 ) -> list[Publicacion]:
+    filtros = FiltrosPublicaciones(**consulta.model_dump())
     servicio = ServicioPublicaciones(sesion)
-    return servicio.listar()
+    return servicio.listar(filtros)
 
 
 @router.get(
