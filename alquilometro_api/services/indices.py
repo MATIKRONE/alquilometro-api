@@ -45,6 +45,14 @@ class RepositorioIndicesDB:
         self.sesion.commit()
         return fila
 
+    def listar(self, serie: str) -> list[ValorIndice]:
+        consulta = (
+            select(ValorIndice)
+            .where(ValorIndice.serie == normalizar_serie(serie))
+            .order_by(ValorIndice.fecha)
+        )
+        return list(self.sesion.scalars(consulta))
+
     def _buscar(self, serie: str, momento: date) -> ValorIndice | None:
         consulta = select(ValorIndice).where(
             ValorIndice.serie == serie,
