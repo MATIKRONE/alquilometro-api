@@ -11,6 +11,7 @@ from alquilometro_api.routers.auth import router as auth_router
 from alquilometro_api.routers.publicaciones import (
     router as publicaciones_router,
 )
+from alquilometro_api.routers.usuarios import router as usuarios_router
 
 
 @asynccontextmanager
@@ -41,6 +42,7 @@ def manejar_error_dominio(
 
 app.include_router(auth_router)
 app.include_router(publicaciones_router)
+app.include_router(usuarios_router)
 
 
 @app.get('/')
