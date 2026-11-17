@@ -56,6 +56,8 @@ class PublicacionCrear(BaseModel):
         max_length=100,
     )
     deposito: DineroEntrada | None = None
+    comision: DineroEntrada | None = None
+    otros_gastos_entrada: DineroEntrada | None = None
     # TODO: cambiar cuando se cree enum INDICE!!!
     tipo_ajuste: Literal['FIJO', 'INDICE'] | None = None
     tasa_ajuste: Decimal | None = Field(
@@ -129,5 +131,6 @@ class AnalisisEconomicoRespuesta(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     costo_real: DesgloseCostoRespuesta
+    costo_entrada: DesgloseCostoRespuesta
     ingreso_referencia: DineroEntrada
     porcentaje_ingreso: Decimal
