@@ -3,7 +3,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from alquilometro_api.domain.dinero import Dinero
 from alquilometro_api.domain.moneda import Moneda
 from alquilometro_api.domain.rol import Rol
 
@@ -31,16 +30,18 @@ class TokenRespuesta(BaseModel):
     token_type: Literal['bearer'] = 'bearer'
 
 
-class IngresoReferenciaEntrada(BaseModel):
-    """Ingreso mensual usado para comparar costos de alquiler."""
-
-    model_config = ConfigDict(from_attributes=True)
+class IngresoEntrada(BaseModel):
+    """Datos que recibe PUT /usuarios/me/ingreso-referencia"""
 
     monto: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
     moneda: Moneda = Moneda.ARS
 
-    def a_dominio(self) -> Dinero:
-        return Dinero(self.monto, self.moneda)
+
+class IngresoRespuesta(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    monto: Decimal
+    moneda: Moneda
 
 
 class UsuarioRespuesta(BaseModel):
@@ -52,4 +53,4 @@ class UsuarioRespuesta(BaseModel):
     nombre: str
     email: str
     rol: Rol
-    ingreso_referencia: IngresoReferenciaEntrada | None = None
+    ingreso_referencia: IngresoRespuesta | None = None
