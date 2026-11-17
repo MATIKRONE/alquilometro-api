@@ -17,7 +17,7 @@ Trabajo práctico integrador de Programación 2 (UNSAM).
 |---|---|---|
 | Autenticación (transversal) | `POST /auth/registro`, `POST /auth/login`, `GET /usuarios/me`, `PUT /usuarios/me/ingreso-referencia` | ✅ |
 | RQ1 · Publicaciones con costo real | `POST /publicaciones`, `GET /publicaciones`, `GET /publicaciones/{id}/costo-real` | ✅ (filtros y orden: pendientes) |
-| RQ3 · Costo real sobre el ingreso | `GET /publicaciones/{id}/analisis` | ✅ |
+| RQ3 · Costo sobre el ingreso y proyección a 12 y 24 meses | `GET /publicaciones/{id}/analisis`, `GET /publicaciones/{id}/proyeccion` | ✅ |
 | RQ5 · Seguimiento del contrato | `POST /contratos`, `GET /contratos`, `GET /contratos/{id}`, `GET /contratos/{id}/calendario`, `GET /contratos/{id}/ajuste?fecha=` | ✅ |
 | RQ5 · Verificación de ajustes | `POST /contratos/{id}/verificaciones`, `GET /contratos/{id}/verificaciones` | ✅ |
 | Series de índices | `GET /indices/{serie}/valores`, `POST /indices/{serie}/valores` (solo admin) | ✅ |
@@ -137,6 +137,12 @@ clase parametrizada por serie, no una subclase por índice.
 
 La regla de oro: el ajuste por índice se calcula **siempre contra el monto
 base** (`monto_base × índice actual ÷ índice inicial`), nunca encadenando.
+
+La proyección del RQ3 reutiliza las mismas estrategias: arma un escenario de
+índices futuros (el promedio de los últimos 12 meses de la serie, o una tasa
+que indica el usuario) y se lo pasa a `AjusteIndice`. No tiene una fórmula
+propia, así que lo proyectado y lo que después se verifica en el contrato no
+pueden divergir.
 
 ### Simple Factory (`FabricaMecanismoAjuste`)
 
