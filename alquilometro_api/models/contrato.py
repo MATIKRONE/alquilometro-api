@@ -118,3 +118,19 @@ class VerificacionAjuste(Base):
     @property
     def resultado_verificacion(self) -> ResultadoVerificacion:
         return ResultadoVerificacion(self.resultado)
+
+    @property
+    def informado(self) -> Dinero:
+        return Dinero(self.monto_informado, Moneda(self.moneda))
+
+    @property
+    def esperado(self) -> Dinero:
+        return Dinero(self.monto_esperado, Moneda(self.moneda))
+
+    @property
+    def diferencia(self) -> Dinero:
+        return self.informado.restar(self.esperado)
+
+    @property
+    def diferencia_porcentual(self) -> Decimal:
+        return self.diferencia.porcentaje_de(self.esperado)
