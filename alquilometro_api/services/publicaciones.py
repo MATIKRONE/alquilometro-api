@@ -54,42 +54,55 @@ class ServicioPublicaciones:
             raise PermisoInsuficiente(msg)
 
         propiedad = Propiedad(**datos.propiedad.model_dump())
-
-        expensas_monto, expensas_moneda = _columnas_dinero(
-            datos.expensas_mensuales,
-        )
-        abl_monto, abl_moneda = _columnas_dinero(datos.abl_mensual)
-        seguro_monto, seguro_moneda = _columnas_dinero(
-            datos.seguro_caucion,
-        )
-        deposito_monto, deposito_moneda = _columnas_dinero(datos.deposito)
-
-        publicacion = Publicacion(
-            propiedad=propiedad,
-            publicador=publicador,
-            precio_alquiler_monto=datos.precio_alquiler.monto,
-            precio_alquiler_moneda=datos.precio_alquiler.moneda.value,
-            expensas_mensuales_monto=expensas_monto,
-            expensas_mensuales_moneda=expensas_moneda,
-            abl_monto=abl_monto,
-            abl_moneda=abl_moneda,
-            seguro_caucion_monto=seguro_monto,
-            seguro_caucion_moneda=seguro_moneda,
-            deposito_monto=deposito_monto,
-            deposito_moneda=deposito_moneda,
-            duracion_contrato_meses=datos.duracion_contrato_meses,
-            tipo_garantia_aceptada=datos.tipo_garantia_aceptada,
-            tipo_ajuste=datos.tipo_ajuste,
-            tasa_ajuste=datos.tasa_ajuste,
-            serie_codigo=datos.serie_codigo,
-            patrocinada=datos.patrocinada,
-            fuente=datos.fuente,
-        )
+        publicacion = Publicacion(propiedad=propiedad, publicador=publicador)
+        _asignar_datos(publicacion, datos)
 
         self.sesion.add(propiedad)
         self.sesion.add(publicacion)
         self.sesion.commit()
         self.sesion.refresh(publicacion)
+        return publicacion
+
+    def actualizar(
+        self,
+        publicacion_id: int,
+        datos: PublicacionCrear,
+        usuario: Usuario,
+    ) -> Publicacion:
+        """Reemplaza los datos del aviso (solo su dueño o un admin)."""
+        publicacion = self._obtener_gestionable(publicacion_id, usuario)
+        for campo, valor in datos.propiedad.model_dump().items():
+            setattr(publicacion.propiedad, campo, valor)
+        _asignar_datos(publicacion, datos)
+
+        self.sesion.commit()
+        self.sesion.refresh(publicacion)
+        return publicacion
+
+    def eliminar(self, publicacion_id: int, usuario: Usuario) -> None:
+        """Borra el aviso y su propiedad si no tiene otros avisos."""
+        publicacion = self._obtener_gestionable(publicacion_id, usuario)
+        propiedad = publicacion.propiedad
+        otros_avisos = [
+            p for p in propiedad.publicaciones if p is not publicacion
+        ]
+
+        self.sesion.delete(publicacion)
+        if not otros_avisos:
+            self.sesion.delete(propiedad)
+        self.sesion.commit()
+
+    def _obtener_gestionable(
+        self, publicacion_id: int, usuario: Usuario
+    ) -> Publicacion:
+        publicacion = self.obtener(publicacion_id)
+        if usuario.rol is not Rol.ADMIN and (
+            publicacion.publicador_id != usuario.id
+        ):
+            msg = (
+                'Solo quien publicó el aviso o un administrador puede hacerlo.'
+            )
+            raise PermisoInsuficiente(msg)
         return publicacion
 
     def listar(
@@ -245,8 +258,35 @@ class ServicioPublicaciones:
         publicacion = self.obtener(publicacion_id)
         return AnalisisEconomico(
             costo_real=publicacion.calcular_costo_real(),
+            costo_entrada=publicacion.calcular_costo_entrada(),
             ingreso_referencia=usuario.ingreso_referencia,
         )
+
+
+def _asignar_datos(publicacion: Publicacion, datos: PublicacionCrear) -> None:
+    """Copia los datos del aviso a las columnas del modelo."""
+    precio = datos.precio_alquiler
+    publicacion.precio_alquiler_monto = precio.monto
+    publicacion.precio_alquiler_moneda = precio.moneda.value
+    columnas = {
+        'expensas_mensuales': datos.expensas_mensuales,
+        'abl': datos.abl_mensual,
+        'seguro_caucion': datos.seguro_caucion,
+        'deposito': datos.deposito,
+        'comision': datos.comision,
+        'otros_gastos_entrada': datos.otros_gastos_entrada,
+    }
+    for prefijo, dinero in columnas.items():
+        monto, moneda = _columnas_dinero(dinero)
+        setattr(publicacion, f'{prefijo}_monto', monto)
+        setattr(publicacion, f'{prefijo}_moneda', moneda)
+    publicacion.duracion_contrato_meses = datos.duracion_contrato_meses
+    publicacion.tipo_garantia_aceptada = datos.tipo_garantia_aceptada
+    publicacion.tipo_ajuste = datos.tipo_ajuste
+    publicacion.tasa_ajuste = datos.tasa_ajuste
+    publicacion.serie_codigo = datos.serie_codigo
+    publicacion.patrocinada = datos.patrocinada
+    publicacion.fuente = datos.fuente
 
 
 def _columnas_dinero(

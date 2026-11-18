@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from alquilometro_api.core.database import get_session
 from alquilometro_api.core.dependencias import usuario_actual
 from alquilometro_api.domain.analisis_economico import AnalisisEconomico
-from alquilometro_api.domain.desglose_costo import DesgloseCosto
+from alquilometro_api.domain.desglose_costo import CostoEntrada, DesgloseCosto
 from alquilometro_api.models.publicacion import Publicacion
 from alquilometro_api.models.usuario import Usuario
 from alquilometro_api.schemas.publicacion import (
@@ -49,6 +49,46 @@ def listar_publicaciones(
     filtros = FiltrosPublicaciones(**consulta.model_dump())
     servicio = ServicioPublicaciones(sesion)
     return servicio.listar(filtros)
+
+
+@router.get('/{publicacion_id}', response_model=PublicacionRespuesta)
+def obtener_publicacion(
+    publicacion_id: int,
+    sesion: Session = Depends(get_session),
+) -> Publicacion:
+    return ServicioPublicaciones(sesion).obtener(publicacion_id)
+
+
+@router.put('/{publicacion_id}', response_model=PublicacionRespuesta)
+def actualizar_publicacion(
+    publicacion_id: int,
+    datos: PublicacionCrear,
+    sesion: Session = Depends(get_session),
+    usuario: Usuario = Depends(usuario_actual),
+) -> Publicacion:
+    servicio = ServicioPublicaciones(sesion)
+    return servicio.actualizar(publicacion_id, datos, usuario)
+
+
+@router.delete('/{publicacion_id}', status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_publicacion(
+    publicacion_id: int,
+    sesion: Session = Depends(get_session),
+    usuario: Usuario = Depends(usuario_actual),
+) -> None:
+    ServicioPublicaciones(sesion).eliminar(publicacion_id, usuario)
+
+
+@router.get(
+    '/{publicacion_id}/costo-entrada',
+    response_model=DesgloseCostoRespuesta,
+)
+def obtener_costo_entrada(
+    publicacion_id: int,
+    sesion: Session = Depends(get_session),
+) -> CostoEntrada:
+    publicacion = ServicioPublicaciones(sesion).obtener(publicacion_id)
+    return publicacion.calcular_costo_entrada()
 
 
 @router.get(

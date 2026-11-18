@@ -16,8 +16,9 @@ Trabajo práctico integrador de Programación 2 (UNSAM).
 | Requerimiento | Endpoints | Estado |
 |---|---|---|
 | Autenticación (transversal) | `POST /auth/registro`, `POST /auth/login`, `GET /usuarios/me`, `PUT /usuarios/me/ingreso-referencia` | ✅ |
-| RQ1 · Publicaciones con costo real | `POST /publicaciones`, `GET /publicaciones`, `GET /publicaciones/{id}/costo-real` | ✅ (filtros y orden: pendientes) |
-| RQ3 · Costo sobre el ingreso y proyección a 12 y 24 meses | `GET /publicaciones/{id}/analisis`, `GET /publicaciones/{id}/proyeccion` | ✅ |
+| Publicaciones (alta, consulta, edición, baja) | `POST /publicaciones`, `GET /publicaciones`, `GET`, `PUT` y `DELETE /publicaciones/{id}` (solo su dueño o un admin) | ✅ |
+| RQ1 · Búsqueda y costo real | `GET /publicaciones?zona=&orden=...`, `GET /publicaciones/{id}/costo-real` | ✅ (orden por % del ingreso: pendiente) |
+| RQ3 · Costo de entrada, costo sobre el ingreso y proyección a 12 y 24 meses | `GET /publicaciones/{id}/costo-entrada`, `/analisis`, `/proyeccion` | ✅ |
 | RQ5 · Seguimiento del contrato | `POST /contratos`, `GET /contratos`, `GET /contratos/{id}`, `GET /contratos/{id}/calendario`, `GET /contratos/{id}/ajuste?fecha=` | ✅ |
 | RQ5 · Verificación de ajustes | `POST /contratos/{id}/verificaciones`, `GET /contratos/{id}/verificaciones` | ✅ |
 | Series de índices | `GET /indices/{serie}/valores`, `POST /indices/{serie}/valores` (solo admin) | ✅ |
@@ -76,10 +77,26 @@ La documentación interactiva queda en <http://127.0.0.1:8000/docs>.
 poetry run python -m alquilometro_api.semilla
 ```
 
-Carga 24 meses de una serie **ICL de ejemplo** (no es la serie oficial del
-BCRA: crece 2,5% por mes desde enero de 2025 para que las cuentas sean fáciles
-de seguir). Si están definidas `ADMIN_EMAIL` y `ADMIN_PASSWORD`, también crea
-un administrador, que es el único rol que puede cargar índices.
+Carga: una serie **ICL de ejemplo** (24 meses, crece 2,5% por mes desde enero
+de 2025; no es la oficial del BCRA), una serie **IPC** armada con las
+variaciones mensuales del INDEC (enero 2024 a octubre 2025, base dic-2023 =
+100; transcriptas a mano, verificarlas contra el INDEC antes de presentarlas
+como oficiales) y **20 avisos** variados (ARS y USD, ajuste fijo, por ICL, por
+IPC o sin informar, con y sin datos faltantes). Los avisos pertenecen a un
+usuario ADMIN `sistema@alquilometro.local` sin contraseña utilizable, así que
+solo un administrador puede modificarlos. Si están definidas `ADMIN_EMAIL` y
+`ADMIN_PASSWORD`, también crea un administrador (el único rol que puede
+cargar índices). Es idempotente: no duplica avisos.
+
+Para usar series oficiales, descargarlas como CSV `fecha,valor` (fecha ISO) y:
+
+```bash
+poetry run python -m alquilometro_api.semilla --csv ICL icl.csv
+```
+
+Si ya tenías un `alquilometro.db` de antes, borralo: las tablas se crean con
+`create_all`, que no agrega columnas nuevas (comisión y otros gastos de
+entrada) a tablas existentes.
 
 ### Recorrido de la demo
 
@@ -123,6 +140,9 @@ API con una SQLite en memoria). Una GitHub Action corre `ruff` y `pytest` en
 cada push y en cada pull request.
 
 ## Patrones de diseño
+
+Guía para la defensa oral, con el estado de cada patrón:
+[`docs/defensa-patrones.md`](docs/defensa-patrones.md).
 
 ### Strategy: mecanismos de ajuste (`domain/ajuste.py`)
 

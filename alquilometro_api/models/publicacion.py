@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from alquilometro_api.core.database import Base
-from alquilometro_api.domain.desglose_costo import DesgloseCosto
+from alquilometro_api.domain.desglose_costo import CostoEntrada, DesgloseCosto
 from alquilometro_api.domain.dinero import Dinero
 from alquilometro_api.domain.moneda import Moneda
 
@@ -67,6 +67,24 @@ class Publicacion(Base):
         nullable=True,
     )
     deposito_moneda: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
+
+    comision_monto: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+    )
+    comision_moneda: Mapped[str | None] = mapped_column(
+        String(3),
+        nullable=True,
+    )
+
+    otros_gastos_entrada_monto: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+    )
+    otros_gastos_entrada_moneda: Mapped[str | None] = mapped_column(
         String(3),
         nullable=True,
     )
@@ -134,6 +152,30 @@ class Publicacion(Base):
         return self._dinero_opcional(
             self.deposito_monto,
             self.deposito_moneda,
+        )
+
+    @property
+    def comision(self) -> Dinero | None:
+        return self._dinero_opcional(
+            self.comision_monto,
+            self.comision_moneda,
+        )
+
+    @property
+    def otros_gastos_entrada(self) -> Dinero | None:
+        return self._dinero_opcional(
+            self.otros_gastos_entrada_monto,
+            self.otros_gastos_entrada_moneda,
+        )
+
+    def calcular_costo_entrada(self) -> CostoEntrada:
+        """Gastos de firma separados por concepto (seguro: prima total)."""
+        return CostoEntrada(
+            primer_mes=self.precio_alquiler,
+            deposito=self.deposito,
+            comision=self.comision,
+            seguro_caucion=self.seguro_caucion,
+            otros_gastos=self.otros_gastos_entrada,
         )
 
     def calcular_costo_real(self) -> DesgloseCosto:
