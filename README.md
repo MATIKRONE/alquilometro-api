@@ -141,8 +141,6 @@ cada push y en cada pull request.
 
 ## Patrones de diseño
 
-Guía para la defensa oral, con el estado de cada patrón:
-[`docs/defensa-patrones.md`](docs/defensa-patrones.md).
 
 ### Strategy: mecanismos de ajuste (`domain/ajuste.py`)
 
