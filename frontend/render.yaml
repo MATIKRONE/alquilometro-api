@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: alquilometro-tp-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./alquilometro.db
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_MINUTOS_EXPIRACION
+        value: "120"
