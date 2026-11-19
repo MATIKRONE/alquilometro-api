@@ -18,4 +18,6 @@ COPY alquilometro_api ./alquilometro_api
 
 EXPOSE 8000
 
-CMD ["uvicorn", "alquilometro_api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Al arrancar se cargan los datos de ejemplo (la semilla es idempotente) y
+# después se levanta la API. Render y otros hosts indican el puerto en $PORT.
+CMD ["sh", "-c", "python -m alquilometro_api.semilla && exec uvicorn alquilometro_api.app:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -128,6 +128,25 @@ Levanta la API en el puerto 8000 con SQLite en un volumen. Para usar
 PostgreSQL: `docker compose --profile postgres up` y apuntar `DATABASE_URL` a
 `postgresql+psycopg://alquilometro:alquilometro@db:5432/alquilometro`.
 
+Al arrancar, el contenedor corre la semilla y después levanta la API, así que
+siempre hay datos de demo cargados.
+
+## Deploy
+
+La API está preparada para [Render](https://render.com) con el archivo
+`render.yaml`:
+
+1. En Render: **New > Blueprint** y elegir este repositorio.
+2. Opcional: completar `ADMIN_EMAIL` y `ADMIN_PASSWORD` para tener un
+   administrador (es el único rol que puede cargar índices).
+3. Esperar el primer build; la documentación queda en
+   `https://<nombre-del-servicio>.onrender.com/docs`.
+
+En el plan gratuito el servicio se duerme tras 15 minutos sin tráfico y tarda
+cerca de un minuto en despertar: conviene abrirlo un rato antes de usarlo. El
+disco no es persistente, así que los usuarios registrados se pierden al
+reiniciar; la semilla vuelve a cargar los datos de ejemplo en cada arranque.
+
 ## Tests
 
 ```bash
