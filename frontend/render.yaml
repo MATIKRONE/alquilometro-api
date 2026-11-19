@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: alquilometro-app
+    name: alquilometro-ar
     runtime: docker
     plan: free
     dockerfilePath: ./frontend/Dockerfile
