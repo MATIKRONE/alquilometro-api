@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="Inter, sans-serif">
+  <defs>
+    <marker id="flecha" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" orient="auto">
+      <path d="M1,1 L11,6 L1,11 Z" fill="#0F1B2A"/>
+    </marker>
+  </defs>
+  <style>
+    .card{fill:#fff;stroke:#D5DBE3;stroke-width:1.5}
+    .titulo{font-size:26px;font-weight:700;fill:#0F1B2A}
+    .sub{font-size:17px;fill:#5B6675}
+    .chip{fill:#F1F4F7}
+    .chiptxt{font-size:16px;fill:#1F2A37;font-family:'DejaVu Sans Mono',monospace}
+    .linea{stroke:#0F1B2A;stroke-width:2.5;fill:none}
+    .rotulo{font-size:15px;font-weight:600;fill:#5B6675}
+  </style>
+
+  <!-- Contenedor Docker -->
+  <rect x="420" y="70" width="1130" height="760" rx="18" fill="#F7F9FB" stroke="#9AA4B2" stroke-width="1.5" stroke-dasharray="8 7"/>
+  <text x="446" y="104" font-size="16" font-weight="600" fill="#5B6675">Contenedor Docker · GitHub Actions corre ruff + pytest en cada PR</text>
+
+  <!-- tarjeta: x, y, color de franja -->
+  <g>
+    <rect x="40" y="150" width="300" height="290" rx="12" class="card"/>
+    <rect x="40" y="150" width="300" height="8" rx="4" fill="#9AA4B2"/>
+    <text x="64" y="204" class="titulo">Cliente</text>
+    <text x="64" y="234" class="sub">Swagger /docs o una app</text>
+    <rect x="64" y="262" width="240" height="38" rx="8" class="chip"/><text x="80" y="287" class="chiptxt">HTTP + JSON</text>
+    <rect x="64" y="310" width="240" height="38" rx="8" class="chip"/><text x="80" y="335" class="chiptxt">Bearer JWT</text>
+  </g>
+
+  <g>
+    <rect x="460" y="150" width="300" height="290" rx="12" class="card"/>
+    <rect x="460" y="150" width="300" height="8" rx="4" fill="#0F1B2A"/>
+    <text x="484" y="204" class="titulo">Routers</text>
+    <text x="484" y="234" class="sub">FastAPI: validan y documentan</text>
+    <rect x="484" y="262" width="252" height="38" rx="8" class="chip"/><text x="500" y="287" class="chiptxt">/auth</text>
+    <rect x="484" y="310" width="252" height="38" rx="8" class="chip"/><text x="500" y="335" class="chiptxt">/publicaciones</text>
+    <rect x="484" y="358" width="252" height="38" rx="8" class="chip"/><text x="500" y="383" class="chiptxt">/contratos</text>
+  </g>
+
+  <g>
+    <rect x="840" y="150" width="300" height="290" rx="12" class="card"/>
+    <rect x="840" y="150" width="300" height="8" rx="4" fill="#2BB39A"/>
+    <text x="864" y="204" class="titulo">Servicios</text>
+    <text x="864" y="234" class="sub">casos de uso y permisos</text>
+    <rect x="864" y="262" width="252" height="38" rx="8" class="chip"/><text x="880" y="287" class="chiptxt">ServicioContratos</text>
+    <rect x="864" y="310" width="252" height="38" rx="8" class="chip"/><text x="880" y="335" class="chiptxt">ServicioPublicaciones</text>
+    <rect x="864" y="358" width="252" height="38" rx="8" class="chip"/><text x="880" y="383" class="chiptxt">ServicioProyecciones</text>
+  </g>
+
+  <g>
+    <rect x="1220" y="150" width="300" height="290" rx="12" class="card"/>
+    <rect x="1220" y="150" width="300" height="8" rx="4" fill="#F2B632"/>
+    <text x="1244" y="204" class="titulo">Dominio</text>
+    <text x="1244" y="234" class="sub">reglas puras, sin HTTP ni base</text>
+    <rect x="1244" y="262" width="252" height="38" rx="8" class="chip"/><text x="1260" y="287" class="chiptxt">Dinero</text>
+    <rect x="1244" y="310" width="252" height="38" rx="8" class="chip"/><text x="1260" y="335" class="chiptxt">MecanismoAjuste</text>
+    <rect x="1244" y="358" width="252" height="38" rx="8" class="chip"/><text x="1260" y="383" class="chiptxt">verificar_ajuste</text>
+  </g>
+
+  <g>
+    <rect x="460" y="520" width="300" height="270" rx="12" class="card"/>
+    <rect x="460" y="520" width="300" height="8" rx="4" fill="#9AA4B2"/>
+    <text x="484" y="574" class="titulo">core/</text>
+    <text x="484" y="604" class="sub">transversal a todas las capas</text>
+    <rect x="484" y="632" width="252" height="38" rx="8" class="chip"/><text x="500" y="657" class="chiptxt">config .env</text>
+    <rect x="484" y="680" width="252" height="38" rx="8" class="chip"/><text x="500" y="705" class="chiptxt">seguridad + JWT</text>
+    <rect x="484" y="728" width="252" height="38" rx="8" class="chip"/><text x="500" y="753" class="chiptxt">errores → HTTP</text>
+  </g>
+
+  <g>
+    <rect x="840" y="520" width="300" height="270" rx="12" class="card"/>
+    <rect x="840" y="520" width="300" height="8" rx="4" fill="#2BB39A"/>
+    <text x="864" y="574" class="titulo">Modelos</text>
+    <text x="864" y="604" class="sub">SQLAlchemy</text>
+    <rect x="864" y="632" width="252" height="38" rx="8" class="chip"/><text x="880" y="657" class="chiptxt">Usuario</text>
+    <rect x="864" y="680" width="252" height="38" rx="8" class="chip"/><text x="880" y="705" class="chiptxt">Publicacion</text>
+    <rect x="864" y="728" width="252" height="38" rx="8" class="chip"/><text x="880" y="753" class="chiptxt">ContratoAlquiler</text>
+  </g>
+
+  <g>
+    <rect x="1220" y="520" width="300" height="270" rx="12" class="card"/>
+    <rect x="1220" y="520" width="300" height="8" rx="4" fill="#0F1B2A"/>
+    <text x="1244" y="574" class="titulo">Base de datos</text>
+    <text x="1244" y="604" class="sub">SQLite · PostgreSQL opcional</text>
+    <ellipse cx="1370" cy="660" rx="62" ry="16" fill="#E8ECF1" stroke="#0F1B2A" stroke-width="2"/>
+    <path d="M1308,660 L1308,740 A62,16 0 0 0 1432,740 L1432,660" fill="#E8ECF1" stroke="#0F1B2A" stroke-width="2"/>
+    <ellipse cx="1370" cy="660" rx="62" ry="16" fill="#F7F9FB" stroke="#0F1B2A" stroke-width="2"/>
+  </g>
+
+  <!-- Flujo de un request -->
+  <line x1="340" y1="295" x2="452" y2="295" class="linea" marker-end="url(#flecha)"/>
+  <text x="372" y="281" text-anchor="middle" class="rotulo">request</text>
+  <line x1="760" y1="295" x2="832" y2="295" class="linea" marker-end="url(#flecha)"/>
+  <line x1="1140" y1="295" x2="1212" y2="295" class="linea" marker-end="url(#flecha)"/>
+  <line x1="990" y1="440" x2="990" y2="512" class="linea" marker-end="url(#flecha)"/>
+  <line x1="1140" y1="655" x2="1212" y2="655" class="linea" marker-end="url(#flecha)"/>
+</svg>

@@ -1,0 +1,22 @@
+# Blueprint de Render: Dashboard > New > Blueprint > elegir este repositorio.
+services:
+  - type: web
+    name: alquilometro-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # El plan gratuito no tiene disco persistente: la base se recrea en cada
+      # arranque y la semilla vuelve a cargar los mismos datos de demo.
+      - key: DATABASE_URL
+        value: sqlite:///./alquilometro.db
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_MINUTOS_EXPIRACION
+        value: "120"
+      # Opcionales: se piden al crear el Blueprint y crean un administrador.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
