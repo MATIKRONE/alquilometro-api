@@ -596,6 +596,30 @@ def test_consultar_analisis_calcula_porcentaje_sobre_el_ingreso(
     }
 
 
+def test_consultar_analisis_con_monedas_distintas_da_422(
+    cliente: TestClient,
+    headers_inmobiliaria: dict[str, str],
+) -> None:
+    datos = datos_publicacion()
+    for campo in ('precio_alquiler', 'expensas_mensuales', 'abl_mensual'):
+        datos[campo] = {'monto': '700', 'moneda': 'USD'}
+    datos['seguro_caucion'] = None
+    crear_publicacion(cliente, headers_inmobiliaria, datos)
+    cliente.put(
+        '/usuarios/me/ingreso-referencia',
+        json={'monto': '1500000', 'moneda': 'ARS'},
+        headers=headers_inmobiliaria,
+    )
+
+    respuesta = cliente.get(
+        '/publicaciones/1/analisis',
+        headers=headers_inmobiliaria,
+    )
+
+    assert respuesta.status_code == HTTPStatus.UNPROCESSABLE_CONTENT
+    assert 'sin una cotización' in respuesta.json()['detail']
+
+
 def test_consultar_analisis_sin_ingreso_referencia_da_422(
     cliente: TestClient,
     headers_inmobiliaria: dict[str, str],

@@ -133,14 +133,13 @@ siempre hay datos de demo cargados.
 
 ## Deploy
 
-La API está preparada para [Render](https://render.com) con el archivo
-`render.yaml`:
+**Versión publicada:** https://alquilometro-unsam-t15n.onrender.com/
+(página web) y https://alquilometro-unsam-t15n.onrender.com/docs (Swagger).
 
-1. En Render: **New > Blueprint** y elegir este repositorio.
-2. Opcional: completar `ADMIN_EMAIL` y `ADMIN_PASSWORD` para tener un
-   administrador (es el único rol que puede cargar índices).
-3. Esperar el primer build; la documentación queda en
-   `https://<nombre-del-servicio>.onrender.com/docs`.
+La versión publicada usa el Blueprint `frontend/render.yaml`: un solo servicio
+sirve la página web en `/`, la API en `/api/` y Swagger en `/docs`. Los pasos
+están en [`frontend/README.md`](frontend/README.md). El `render.yaml` de la
+raíz sigue disponible para desplegar solo la API.
 
 En el plan gratuito el servicio se duerme tras 15 minutos sin tráfico y tarda
 cerca de un minuto en despertar: conviene abrirlo un rato antes de usarlo. El
@@ -154,7 +153,7 @@ poetry run pytest          # o: poetry test (corre lint + tests + cobertura)
 poetry run ruff check .
 ```
 
-Más de 200 tests (unitarios de dominio y servicios, y de integración contra la
+Más de 300 tests (unitarios de dominio y servicios, y de integración contra la
 API con una SQLite en memoria). Una GitHub Action corre `ruff` y `pytest` en
 cada push y en cada pull request.
 
