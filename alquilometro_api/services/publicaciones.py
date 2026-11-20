@@ -256,8 +256,20 @@ class ServicioPublicaciones:
             raise ValidacionError(msg)
 
         publicacion = self.obtener(publicacion_id)
+        costo_real = publicacion.calcular_costo_real()
+        ingreso = usuario.ingreso_referencia
+        # Sin una cotización no se pueden comparar pesos con dólares: se
+        # avisa con un 422 en lugar de fallar al armar la respuesta.
+        if costo_real.total.moneda != ingreso.moneda:
+            msg = (
+                f'La publicación está en {costo_real.total.moneda} y tu '
+                f'ingreso en {ingreso.moneda}: no se puede calcular el '
+                'porcentaje sin una cotización.'
+            )
+            raise ValidacionError(msg)
+
         return AnalisisEconomico(
-            costo_real=publicacion.calcular_costo_real(),
+            costo_real=costo_real,
             costo_entrada=publicacion.calcular_costo_entrada(),
             ingreso_referencia=usuario.ingreso_referencia,
         )
